@@ -18,7 +18,6 @@ async function gh(path: string, token: string | null, init: RequestInit & { acce
       Accept: init.accept ?? 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
     },
   });
   // Private repos answer 404 to anonymous callers, so treat that as "needs sign-in" too.
@@ -38,6 +37,3 @@ export const getPull = async (o: string, r: string, n: number, token: string | n
 
 export const getPullDiff = async (o: string, r: string, n: number, token: string | null): Promise<string> =>
   (await gh(`/repos/${o}/${r}/pulls/${n}`, token, { accept: 'application/vnd.github.diff' })).text();
-
-export const updatePullBody = async (o: string, r: string, n: number, token: string, body: string): Promise<Pull> =>
-  (await gh(`/repos/${o}/${r}/pulls/${n}`, token, { method: 'PATCH', body: JSON.stringify({ body }) })).json();

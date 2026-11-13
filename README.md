@@ -18,15 +18,14 @@ collapsed block, so there is no database. Reviewers click the link and step thro
 </details>
 ````
 
-You don't have to write this by hand. Open `/<owner>/<repo>/pull/<n>`, click **Edit tour**, click
-line numbers in the diff to add steps (Shift-click extends a step to a range), then use
-**Save to PR description** or **Copy snippet**. **Copy share link** gives an ad-hoc tour packed
-into the URL fragment (`#tour=…`, like mermaid.live) without touching the PR.
+The viewer only reads tours; it never edits the PR. A tour can also travel in the URL fragment
+(`#tour=<lz-string of the tour JSON>`, like mermaid.live), for a PR whose description you can't
+edit. The fragment wins over the description.
 
 `head=` records the commit the tour was written against. When the PR gets new commits, the viewer
 shows a warning that lines may have moved.
 
-Keys: `→`/`j` next, `←`/`k` previous, `e` toggle editing.
+Keys: `→`/`j` next, `←`/`k` previous.
 
 ## How it works
 
@@ -57,8 +56,7 @@ GitHub → org **Settings → Developer settings → GitHub Apps → New GitHub 
 
 - **Callback URL:** `https://<your-domain>/api/callback`
 - **Webhook:** uncheck *Active*
-- **Repository permissions:** *Pull requests: Read and write* (write is only used by
-  "Save to PR description"; Read-only works if you prefer copy/paste), *Contents: Read-only*
+- **Repository permissions:** *Pull requests: Read-only*, *Contents: Read-only*
 - **Where can this app be installed:** *Only on this account*
 
 Then generate a **client secret**, and **Install App** on the org for the repos you want tours on.
