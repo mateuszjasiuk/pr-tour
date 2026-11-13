@@ -8,21 +8,28 @@ collapsed block, so there is no database. Reviewers click the link and step thro
 
 <details><summary>Review tour</summary>
 
-```tour head=3f2a9c1
-1. src/billing/invoice.ts:42 — Start here: new proration logic
-   Optional notes, indented under the step. Supports **bold**, `code`, [links](https://…).
-2. src/billing/invoice.ts:88-95 — A range of lines
-3. src/legacy.ts:-17 — A leading minus points at the old (deleted) side
+```json
+{
+  "title": "Billing changes",
+  "ref": "3f2a9c1",
+  "steps": [
+    { "file": "src/billing/invoice.ts", "line": 42, "title": "Start here", "description": "New proration logic. Supports **bold**, `code`, [links](https://…)." },
+    { "file": "src/billing/invoice.ts", "selection": { "start": { "line": 88 }, "end": { "line": 95 } }, "description": "A range of lines" },
+    { "title": "Wrap-up", "description": "A step without a file is a plain note" }
+  ]
+}
 ```
 
 </details>
 ````
 
-The viewer only reads tours; it never edits the PR. A tour can also travel in the URL fragment
-(`#tour=<lz-string of the tour JSON>`, like mermaid.live), for a PR whose description you can't
+The tour is a [VS Code CodeTour](https://github.com/microsoft/codetour) (`.tour` JSON) in any fenced
+block; the viewer takes the first block that parses as one. Lines point at the new side of the
+diff. The viewer only reads tours; it never edits the PR. A tour can also travel in the URL fragment
+(`#tour=<lz-string of the CodeTour JSON>`, like mermaid.live), for a PR whose description you can't
 edit. The fragment wins over the description.
 
-`head=` records the commit the tour was written against. When the PR gets new commits, the viewer
+`ref`, when it is a commit SHA, records the commit the tour was written against. When the PR gets new commits, the viewer
 shows a warning that lines may have moved.
 
 Keys: `→`/`j` next, `←`/`k` previous.

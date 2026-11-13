@@ -3,7 +3,7 @@ import type { DiffFile } from 'diff2html/lib/types';
 import 'diff2html/bundles/css/diff2html.min.css';
 import LZString from 'lz-string';
 import './style.css';
-import { extractTour, type Step, type Tour } from './tour.ts';
+import { extractTour, fromCodeTour, type Step, type Tour } from './tour.ts';
 import { AuthError, getPull, getPullDiff, type Pull } from './github.ts';
 
 // ---------- small utils ----------
@@ -105,7 +105,7 @@ async function load(o: string, r: string, n: number) {
 function fromHash(): Tour | null {
   const m = location.hash.match(/tour=([^&]+)/);
   if (!m) return null;
-  try { return JSON.parse(LZString.decompressFromEncodedURIComponent(m[1]) ?? 'null'); } catch { return null; }
+  try { return fromCodeTour(JSON.parse(LZString.decompressFromEncodedURIComponent(m[1]) ?? 'null')); } catch { return null; }
 }
 
 // ---------- layout ----------
@@ -132,6 +132,7 @@ function shell(o: string, r: string, n: number) {
 function renderSide() {
   const steps = tour.steps;
   $('#side').innerHTML = steps.length ? `
+    ${tour.title ? `<h2 class="tour-title">${esc(tour.title)}</h2>` : ''}
     <div class="nav">
       <button id="prev" ${current === 0 ? 'disabled' : ''}>← Prev</button>
       <span>${current + 1} / ${steps.length}</span>
@@ -140,11 +141,11 @@ function renderSide() {
     <ol class="steps">
       ${steps.map((st, i) => `
         <li class="${i === current ? 'active' : ''}" data-i="${i}">
-          <strong>${esc(st.title || `${st.file.split('/').pop()}:${st.line}`)}</strong>
-          <small>${esc(st.file)}:${st.side === 'old' ? '-' : ''}${st.line}${st.endLine ? `-${st.endLine}` : ''}</small>
+          <strong>${esc(st.title || where(st).split('/').pop() || 'Note')}</strong>
+          ${st.file ? `<small>${esc(where(st))}</small>` : ''}
         </li>`).join('')}
     </ol>`
-    : '<p class="hint">This PR has no tour yet. Tours are read from a <code>tour</code> block in the PR description.</p>';
+    : '<p class="hint">This PR has no tour yet. Tours are read from a CodeTour JSON block in the PR description.</p>';
 
   document.getElementById('prev')?.addEventListener('click', () => go(current - 1));
   document.getElementById('next')?.addEventListener('click', () => go(current + 1));
@@ -161,14 +162,23 @@ function go(i: number) {
   highlight();
 }
 
+/** `file:line-end` as written in the step, or '' for a plain note. */
+function where(s: Step): string {
+  if (!s.file) return '';
+  return `${s.file}${s.line ? `:${s.line}${s.endLine ? `-${s.endLine}` : ''}` : ''}`;
+}
+
 function rowsFor(s: Step): HTMLTableRowElement[] {
-  const idx = files.findIndex((f) => f.newName === s.file || f.oldName === s.file);
+  const { file, line } = s;
+  if (!file || !line) return [];
+
+  const idx = files.findIndex((f) => f.newName === file);
   const wrapper = $('#diff').querySelectorAll<HTMLElement>('.d2h-file-wrapper')[idx];
   if (!wrapper) return [];
-  const end = s.endLine ?? s.line;
+  const end = s.endLine ?? line;
   return [...wrapper.querySelectorAll<HTMLTableRowElement>('tbody tr')].filter((tr) => {
-    const n = Number(tr.querySelector(s.side === 'old' ? '.line-num1' : '.line-num2')?.textContent?.trim() || NaN);
-    return n >= s.line && n <= end;
+    const n = Number(tr.querySelector('.line-num2')?.textContent?.trim() || NaN);
+    return n >= line && n <= end;
   });
 }
 
@@ -184,14 +194,18 @@ function highlight() {
   if (!s) return;
   const rows = rowsFor(s);
   if (!rows.length) {
-    const blob = `https://github.com/${route![1]}/${route![2]}/blob/${pull.head.sha}/${s.file}#L${s.line}${s.endLine ? `-L${s.endLine}` : ''}`;
-    $('#side').insertAdjacentHTML('afterbegin',
-      `<div class="missing">${noteHtml(s)}<p>This line isn’t part of the diff. <a href="${blob}" target="_blank" rel="noopener">View it on GitHub ↗</a></p></div>`);
+    $('#side').insertAdjacentHTML('afterbegin', `<div class="missing">${noteHtml(s)}${s.file ? outsideDiff(s) : ''}</div>`);
     return;
   }
   rows.forEach((tr) => tr.classList.add('tour-hl'));
   rows[rows.length - 1].insertAdjacentHTML('afterend', `<tr class="tour-note"><td colspan="2">${noteHtml(s)}</td></tr>`);
   rows[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function outsideDiff(s: Step): string {
+  const anchor = s.line ? `#L${s.line}${s.endLine ? `-L${s.endLine}` : ''}` : '';
+  const blob = `https://github.com/${route![1]}/${route![2]}/blob/${pull.head.sha}/${s.file}${anchor}`;
+  return `<p>${s.line ? 'This line isn’t' : 'This file isn’t'} part of the diff. <a href="${esc(blob)}" target="_blank" rel="noopener">View it on GitHub ↗</a></p>`;
 }
 
 function onKey(e: KeyboardEvent) {

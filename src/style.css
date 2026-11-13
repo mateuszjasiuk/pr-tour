@@ -46,6 +46,7 @@ aside { overflow: auto; padding: 16px; border-right: 1px solid var(--border); di
 aside, #diff { min-height: 0; }
 #diff { position: relative; }
 
+.tour-title { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
 .nav { display: flex; align-items: center; justify-content: space-between; }
 .nav span { color: var(--muted); }
 .hint { margin: 0; color: var(--muted); font-size: 12px; }
