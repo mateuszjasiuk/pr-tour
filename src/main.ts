@@ -87,8 +87,17 @@ async function load(o: string, r: string, n: number) {
     go(current);
   } catch (e) {
     if (e instanceof AuthError) {
-      app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p>${esc(e.message)}</p><button id="signin">Sign in with GitHub</button></main>`;
+      app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p>${esc(e.message)}</p><button id="signin">Sign in with GitHub</button>
+        <details class="pat"><summary>Or use a personal access token</summary>
+          <p>A <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Tour" target="_blank" rel="noopener">classic token with the <code>repo</code> scope</a> works on any repo you can read. It stays in this browser only.</p>
+          <form id="pat"><input name="t" type="password" placeholder="ghp_…" autocomplete="off" required /><button>Use token</button></form>
+        </details></main>`;
       $('#signin').onclick = signIn;
+      $('#pat').addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        store.set(TOKEN, (new FormData(ev.target as HTMLFormElement).get('t') as string).trim());
+        location.reload();
+      });
     } else {
       app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p class="err">${esc(String((e as Error).message))}</p></main>`;
     }

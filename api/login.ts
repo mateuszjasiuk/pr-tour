@@ -9,6 +9,8 @@ export function GET(req: Request): Response {
   const authorize = new URL('https://github.com/login/oauth/authorize');
   authorize.searchParams.set('client_id', clientId);
   authorize.searchParams.set('redirect_uri', `${url.origin}/api/callback`);
+  // `repo` lets a classic OAuth App read private repos you can access (GitHub Apps ignore scopes).
+  authorize.searchParams.set('scope', process.env.GITHUB_OAUTH_SCOPE ?? 'repo');
   authorize.searchParams.set('state', `${nonce}.${Buffer.from(returnTo).toString('base64url')}`);
 
   return new Response(null, {

@@ -84,3 +84,6 @@ body.editing .d2h-code-linenumber:hover { color: var(--accent); text-decoration:
   .steps li:not(.active) { display: none; }
   .tour-note td { padding-left: 12px; }
 }
+.pat { margin-top: 24px; }
+.pat summary { cursor: pointer; color: var(--muted); }
+.pat form { display: flex; gap: 8px; }

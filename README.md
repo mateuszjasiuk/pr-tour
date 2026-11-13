@@ -39,7 +39,18 @@ Keys: `→`/`j` next, `←`/`k` previous, `e` toggle editing.
 
 ## Setup
 
-### 1. Create a GitHub App
+### 1. Pick how users sign in
+
+Three options, all supported by the same code:
+
+- **Classic OAuth App** (easiest, usually no org admin needed): GitHub → Settings → Developer
+  settings → **OAuth Apps → New OAuth App**, callback `https://<your-domain>/api/callback`.
+  It requests the `repo` scope and acts as the signed-in user. If the org has *OAuth app access
+  restrictions* on, users see a "Request" button on the consent screen and an owner approves once.
+- **GitHub App** (finer-grained permissions, needs installing on the org by an owner): below.
+- **Personal access token**: no setup. Users paste a classic `repo` token on the sign-in screen.
+
+### GitHub App option
 
 GitHub → org **Settings → Developer settings → GitHub Apps → New GitHub App**:
 
@@ -59,7 +70,7 @@ Import the repo in Vercel (framework preset: Vite) and set the environment varia
 
 | Variable | Value |
 | --- | --- |
-| `GITHUB_CLIENT_ID` | The GitHub App's Client ID |
+| `GITHUB_CLIENT_ID` | The OAuth/GitHub App's Client ID |
 | `GITHUB_CLIENT_SECRET` | The client secret from step 1 |
 
 ### Local development
