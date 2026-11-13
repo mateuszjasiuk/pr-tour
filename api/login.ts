@@ -1,7 +1,9 @@
+import type { Env } from '../worker/index.ts';
+
 // Starts GitHub sign-in. Stateless: a short-lived cookie holds a nonce to check `state` on the way back.
-export function GET(req: Request): Response {
+export function GET(req: Request, env: Env): Response {
   const url = new URL(req.url);
-  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientId = env.GITHUB_CLIENT_ID;
   if (!clientId) return new Response('GITHUB_CLIENT_ID is not set', { status: 500 });
 
   const returnTo = safePath(url.searchParams.get('return'));
@@ -10,7 +12,7 @@ export function GET(req: Request): Response {
   authorize.searchParams.set('client_id', clientId);
   authorize.searchParams.set('redirect_uri', `${url.origin}/api/callback`);
   // `repo` lets a classic OAuth App read private repos you can access (GitHub Apps ignore scopes).
-  authorize.searchParams.set('scope', process.env.GITHUB_OAUTH_SCOPE ?? 'repo');
+  authorize.searchParams.set('scope', env.GITHUB_OAUTH_SCOPE ?? 'repo');
   authorize.searchParams.set('state', `${nonce}.${Buffer.from(returnTo).toString('base64url')}`);
 
   return new Response(null, {

@@ -1,0 +1,14 @@
+{
+  "name": "pr-tour",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Buffer (base64url in the sign-in state) needs Node compatibility.
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Serves index.html for app routes like /owner/repo/pull/123.
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  }
+}

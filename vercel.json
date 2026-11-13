@@ -1,3 +1,0 @@
-{
-  "rewrites": [{ "source": "/:owner/:repo/pull/:number", "destination": "/index.html" }]
-}

@@ -1,6 +1,8 @@
+import type { Env } from '../worker/index.ts';
+
 // Exchanges the GitHub code for a user token and hands it to the browser in the URL fragment
 // (fragments never reach servers or logs). Nothing is stored server-side.
-export async function GET(req: Request): Promise<Response> {
+export async function GET(req: Request, env: Env): Promise<Response> {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const [nonce, encodedReturn] = (url.searchParams.get('state') ?? '').split('.');
@@ -14,8 +16,8 @@ export async function GET(req: Request): Promise<Response> {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      client_id: process.env.GITHUB_CLIENT_ID,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      client_id: env.GITHUB_CLIENT_ID,
+      client_secret: env.GITHUB_CLIENT_SECRET,
       code,
       redirect_uri: `${url.origin}/api/callback`,
     }),

@@ -32,7 +32,8 @@ Keys: `→`/`j` next, `←`/`k` previous, `e` toggle editing.
 
 - `src/`: a static Vite app. It reads the PR and its diff straight from the GitHub API in the
   browser and renders them with [diff2html](https://github.com/rtfpessoa/diff2html).
-- `api/login.ts`, `api/callback.ts`: two Vercel functions for GitHub sign-in. They exist only
+- `api/login.ts`, `api/callback.ts`: two handlers for GitHub sign-in, served by a
+  Cloudflare Worker (`worker/index.ts`) that also serves the static build. They exist only
   because the code-for-token exchange needs the client secret. Nothing is stored server-side: the
   token goes back to the browser in the URL fragment and lives in `localStorage`.
 - Public repos work without signing in (GitHub's anonymous rate limit is 60 requests/hour).
@@ -64,9 +65,11 @@ Then generate a **client secret**, and **Install App** on the org for the repos 
 User tokens can only reach repos where the app is installed, and only what that user can already
 access.
 
-### 2. Deploy to Vercel
+### 2. Deploy to Cloudflare Workers
 
-Import the repo in Vercel (framework preset: Vite) and set the environment variables:
+Cloudflare → **Workers & Pages → Create → Import a repository**. Build command `npm run build`,
+deploy command `npx wrangler deploy` (`wrangler.jsonc` has the rest). Then add, under the Worker's
+**Settings → Variables and Secrets**:
 
 | Variable | Value |
 | --- | --- |
@@ -78,7 +81,9 @@ Import the repo in Vercel (framework preset: Vite) and set the environment varia
 ```bash
 npm install
 npm test          # tour-format parser tests
-npx vercel dev    # app + sign-in functions (plain `npm run dev` works for public repos)
+npm run build && npx wrangler dev    # app + sign-in on :8787 (plain `npm run dev` works for public repos)
 ```
 
-For local sign-in, add `http://localhost:3000/api/callback` as an extra callback URL on the App.
+For local sign-in, put the two variables in `.dev.vars` and use an app whose callback is
+`http://localhost:8787/api/callback`. A classic OAuth App has only one callback URL, so this needs a
+second app.
