@@ -77,6 +77,9 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   #diff { padding: 8px; overflow: visible; }
   .steps li:not(.active) { display: none; }
   .tour-note td { padding-left: 12px; }
+  body, .bubble { font-size: 13px; }
+  .d2h-diff-table { font-size: 11px; }
+  .d2h-file-header { font-size: 12px; }
 }
 .pat { margin-top: 24px; }
 .pat summary { cursor: pointer; color: var(--muted); }
