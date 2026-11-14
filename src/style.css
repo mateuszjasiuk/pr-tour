@@ -121,21 +121,10 @@ html {
   text-size-adjust: 100%;
 }
 
-/* FIX: w media query wzmocnij aside */
 @media (max-width: 800px) {
-  aside {
-    overflow: visible !important;
-    position: static !important;
-    max-height: none !important;
+  /* Numery linii dostają tło swojego wiersza, żeby kod spod spodu nie prześwitywał */
+  .d2h-code-linenumber,
+  .d2h-code-side-linenumber {
+    background-color: inherit !important;
   }
-  #diff {
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-  }
-}
-
-/* DIAG: kolorowe tła — zobacz gdzie jest granica paneli */
-@media (max-width: 800px) {
-  aside { background: rgba(255, 0, 0, 0.12) !important; }
-  #diff { background: rgba(0, 200, 0, 0.12) !important; }
 }
