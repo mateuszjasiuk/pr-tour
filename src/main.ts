@@ -1,8 +1,8 @@
+import 'diff2html/bundles/css/diff2html.min.css';
+import './style.css';
 import { parse, html } from 'diff2html';
 import type { DiffFile } from 'diff2html/lib/types';
-import 'diff2html/bundles/css/diff2html.min.css';
 import LZString from 'lz-string';
-import './style.css';
 import { extractTour, fromCodeTour, type Step, type Tour } from './tour.ts';
 import { AuthError, getPull, getPullDiff, type Pull } from './github.ts';
 
@@ -83,6 +83,7 @@ async function load(o: string, r: string, n: number) {
     current = s >= 1 && s <= tour.steps.length ? s - 1 : 0;
     shell(o, r, n);
     go(current);
+    fetchStackNav(o, r, pull, token());
   } catch (e) {
     if (e instanceof AuthError) {
       app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p>${esc(e.message)}</p><button id="signin">Sign in with GitHub</button>
@@ -114,20 +115,10 @@ function shell(o: string, r: string, n: number) {
   
   const text = (pull.title || '') + ' ' + (pull.body || '');
   
-  // 1. Szukamy linków do innych PR-ów na GitHubie (Stacked PRs)
+  // 1. Szukamy linków do innych PR-ów w opisie
   const ghPrRegex = /https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/g;
   const allPrMatches = text.match(ghPrRegex) || [];
-  // Usuwamy duplikaty i wykluczamy obecny PR
   const stackLinks = [...new Set(allPrMatches)].filter(link => !link.endsWith(`/pull/${n}`));
-
-  // 2. Sprawdzamy, czy PR jest częścią stosu (branch bazowy to nie main/master)
-  const mainBranches = ['main', 'master', 'develop', 'dev'];
-  const isStacked = pull.base && pull.base.ref && !mainBranches.includes(pull.base.ref);
-  
-  // Link do wyszukania PR-a, na którym zbudowany jest ten PR
-  const parentPrSearch = isStacked 
-    ? `https://github.com/${o}/${r}/pulls?q=is%3Apr+head%3A${pull.base.ref}` 
-    : '';
 
   app.innerHTML = `<div class="shell">
     <header>
@@ -135,9 +126,10 @@ function shell(o: string, r: string, n: number) {
       <a class="title" href="${esc(pull.html_url)}" target="_blank" rel="noopener">${esc(pull.title)} <span>${esc(`${o}/${r}#${n}`)}</span></a>
       
       <div class="stack-links">
-        ${isStacked ? `<a href="${parentPrSearch}" target="_blank" rel="noopener" title="Find parent PR (base: ${esc(pull.base.ref)})">🥞</a>` : ''}
         ${stackLinks.map(link => `<a href="${esc(link)}" target="_blank" rel="noopener" title="${esc(link)}">🔗</a>`).join('')}
       </div>
+
+      <div class="stack-nav" id="stack-nav-container"></div>
 
       ${token() ? '<button id="signout" class="ghost">Sign out</button>' : '<button id="signin" class="ghost">Sign in</button>'}
     </header>
@@ -150,6 +142,49 @@ function shell(o: string, r: string, n: number) {
   document.getElementById('signin')?.addEventListener('click', signIn);
   document.getElementById('signout')?.addEventListener('click', signOut);
   document.addEventListener('keydown', onKey);
+}
+
+// ---------- stack navigation ----------
+async function fetchStackNav(o: string, r: string, p: Pull, tok: string | null) {
+  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
+  if (tok) headers.Authorization = `Bearer ${tok}`;
+  
+  const base = (p as any).base?.ref;
+  const head = (p as any).head?.ref;
+  let prev: number | null = null;
+  let next: number | null = null;
+
+  const mainBranches = ['main', 'master', 'develop', 'dev'];
+
+  // Poprzedni PR w stosie (szukamy PR-a, którego head = nasz base)
+  if (base && !mainBranches.includes(base)) {
+    try {
+      const res = await fetch(`https://api.github.com/search/issues?q=repo:${o}/${r}+is:pr+head:${encodeURIComponent(base)}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) prev = data.items[0].number;
+      }
+    } catch {}
+  }
+
+  // Następny PR w stosie (szukamy PR-a, którego base = nasz head)
+  if (head) {
+    try {
+      const res = await fetch(`https://api.github.com/search/issues?q=repo:${o}/${r}+is:pr+base:${encodeURIComponent(head)}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) next = data.items[0].number;
+      }
+    } catch {}
+  }
+
+  const container = document.getElementById('stack-nav-container');
+  if (container && (prev || next)) {
+    container.innerHTML = `
+      ${prev ? `<a href="/${o}/${r}/pull/${prev}" title="Previous PR in stack (#${prev})">⏮</a>` : ''}
+      ${next ? `<a href="/${o}/${r}/pull/${next}" title="Next PR in stack (#${next})">⏭</a>` : ''}
+    `;
+  }
 }
 
 // ---------- sidebar ----------
