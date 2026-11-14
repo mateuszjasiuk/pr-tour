@@ -71,7 +71,11 @@ tr.tour-hl td { background: var(--hl) !important; }
 tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
 
 @media (max-width: 800px) {
-  .shell { height: auto; }
+  /* Dodajemy padding na dole, żeby pasek nawigacji nie zasłaniał kodu */
+  .shell { 
+    height: auto; 
+    padding-bottom: 70px; 
+  }
   header { position: sticky; top: 0; z-index: 3; }
   .layout { grid-template-columns: 1fr; }
   
@@ -116,7 +120,29 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
     background-color: var(--bg) !important;
     z-index: 10 !important;
   }
+
+  /* === NOWOŚĆ: Przyklejony pasek nawigacji na dole === */
+  .nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 10px 16px;
+    /* Uwzględnia bezpieczny obszar na iPhone'ach (pasek gestów) */
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    margin: 0;
+    z-index: 100; /* Musi być nad kodem */
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  }
+
+  /* Troszkę większe przyciski, żeby łatwiej się klikało na telefonie */
+  .nav button {
+    padding: 8px 16px;
+  }
 }
+
 .pat { margin-top: 24px; }
 .pat summary { cursor: pointer; color: var(--muted); }
 .pat form { display: flex; gap: 8px; }
