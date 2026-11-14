@@ -109,12 +109,20 @@ function fromHash(): Tour | null {
 }
 
 // ---------- layout ----------
+// ---------- layout ----------
 function shell(o: string, r: string, n: number) {
   const stale = tour.head && !pull.head.sha.startsWith(tour.head);
+  
+  // Szukamy linków do Stack Overflow / Stack Exchange w tytule lub opisie PR-a
+  const stackRegex = /https?:\/\/[^\s)]+(?:stackoverflow|stackexchange)\.[a-z.]+\/[^\s)]+/gi;
+  const matches = (pull.title + ' ' + pull.body).match(stackRegex) || [];
+  const stackLinks = [...new Set(matches)]; // Usuwamy duplikaty
+  
   app.innerHTML = `<div class="shell">
     <header>
       <a class="brand" href="/">🧭</a>
       <a class="title" href="${esc(pull.html_url)}" target="_blank" rel="noopener">${esc(pull.title)} <span>${esc(`${o}/${r}#${n}`)}</span></a>
+      ${stackLinks.length ? `<div class="stack-links">${stackLinks.map(link => `<a href="${esc(link)}" target="_blank" rel="noopener" title="${esc(link)}">📚</a>`).join('')}</div>` : ''}
       ${token() ? '<button id="signout" class="ghost">Sign out</button>' : '<button id="signin" class="ghost">Sign in</button>'}
     </header>
     ${stale ? `<div class="banner">This tour was written for commit <code>${esc(tour.head!.slice(0, 7))}</code>; the PR has new commits since, so some lines may have moved.</div>` : ''}
