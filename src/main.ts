@@ -1,8 +1,8 @@
+import 'diff2html/bundles/css/diff2html.min.css';
+import './style.css';
 import { parse, html } from 'diff2html';
 import type { DiffFile } from 'diff2html/lib/types';
-import 'diff2html/bundles/css/diff2html.min.css';
 import LZString from 'lz-string';
-import './style.css';
 import { extractTour, fromCodeTour, type Step, type Tour } from './tour.ts';
 import { AuthError, getPull, getPullDiff, type Pull } from './github.ts';
 
@@ -199,7 +199,13 @@ function highlight() {
   }
   rows.forEach((tr) => tr.classList.add('tour-hl'));
   rows[rows.length - 1].insertAdjacentHTML('afterend', `<tr class="tour-note"><td colspan="2">${noteHtml(s)}</td></tr>`);
-  rows[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+  // Przewiń TYLKO #diff — nie cały viewport, nie aside
+  const diffEl = $('#diff');
+  const rowRect = rows[0].getBoundingClientRect();
+  const diffRect = diffEl.getBoundingClientRect();
+  const target = diffEl.scrollTop + rowRect.top - diffRect.top - diffEl.clientHeight / 2 + rows[0].clientHeight / 2;
+  diffEl.scrollTo({ top: target, behavior: 'smooth' });
 }
 
 function outsideDiff(s: Step): string {
