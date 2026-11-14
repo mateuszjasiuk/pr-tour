@@ -40,6 +40,10 @@ header .title { flex: 1; min-width: 0; color: var(--fg); text-decoration: none; 
 header .title span { color: var(--muted); font-weight: 400; margin-left: 6px; }
 .banner { padding: 8px 16px; background: var(--hl); border-bottom: 1px solid var(--hl-edge); }
 
+/* Style dla linków do Stacka w headerze */
+.stack-links { display: flex; gap: 8px; align-items: center; margin-right: 8px; }
+.stack-links a { font-size: 16px; text-decoration: none; }
+
 .shell { height: 100vh; display: flex; flex-direction: column; }
 .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px minmax(0, 1fr); }
 aside { overflow: auto; padding: 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
@@ -71,12 +75,11 @@ tr.tour-hl td { background: var(--hl) !important; }
 tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
 
 @media (max-width: 800px) {
-  /* Dodajemy padding na dole, żeby pasek nawigacji nie zasłaniał kodu */
-  .shell { 
-    height: auto; 
-    padding-bottom: 70px; 
-  }
-  header { position: sticky; top: 0; z-index: 3; }
+  .shell { height: auto; padding-bottom: 70px; }
+  
+  /* Header musi być wyżej niż numerki linii, ale niżej niż dolny pasek */
+  header { position: sticky; top: 0; z-index: 50; }
+  
   .layout { grid-template-columns: 1fr; }
   
   aside {
@@ -114,14 +117,14 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   .hint { font-size: 10px; }
   header .title { font-size: 12px; }
 
-  /* Tło dla numerków linii, żeby kod pod spód nie prześwitywał */
+  /* Tło dla numerków linii + z-index: 2 (kod ma 1, header ma 50) */
   .d2h-code-linenumber,
   .d2h-code-side-linenumber {
     background-color: var(--bg) !important;
-    z-index: 10 !important;
+    z-index: 2 !important; 
   }
 
-  /* === NOWOŚĆ: Przyklejony pasek nawigacji na dole === */
+  /* Przyklejony pasek nawigacji na dole */
   .nav {
     position: fixed;
     bottom: 0;
@@ -130,17 +133,13 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
     background: var(--panel);
     border-top: 1px solid var(--border);
     padding: 10px 16px;
-    /* Uwzględnia bezpieczny obszar na iPhone'ach (pasek gestów) */
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
     margin: 0;
-    z-index: 100; /* Musi być nad kodem */
+    z-index: 100;
     box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
   }
 
-  /* Troszkę większe przyciski, żeby łatwiej się klikało na telefonie */
-  .nav button {
-    padding: 8px 16px;
-  }
+  .nav button { padding: 8px 16px; }
 }
 
 .pat { margin-top: 24px; }
