@@ -47,7 +47,11 @@
 /* ===== Reset / bazowe ===== */
 * { box-sizing: border-box; }
 
-html, body { margin: 0; height: 100%; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
 
 body {
   background: var(--bg);
@@ -137,19 +141,24 @@ header .title span {
 .layout {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
 }
 aside {
   overflow: auto;
+  min-width: 0;
   padding: 16px;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 #diff {
   position: relative;
+  z-index: 0;
   padding: 16px;
   min-width: 0;
   min-height: 0;
@@ -250,15 +259,34 @@ tr.tour-hl td.d2h-code-linenumber {
 @media (max-width: 800px) {
   .shell { height: auto; }
   header { position: sticky; top: 0; z-index: 3; }
-  .layout { grid-template-columns: 1fr; }
+
+  .layout {
+    grid-template-columns: 1fr;
+    min-width: 0;
+  }
   aside {
     border-right: 0;
     border-bottom: 1px solid var(--border);
+    overflow-x: hidden;
   }
-  #diff { padding: 8px; overflow: visible; }
+  #diff {
+    padding: 8px;
+    overflow-x: auto;
+    overflow-y: visible;
+    min-width: 0;
+  }
+
   .steps li:not(.active) { display: none; }
   .tour-note td { padding-left: 12px; }
-  body, .bubble { font-size: 13px; }
-  .d2h-diff-table { font-size: 11px; }
-  .d2h-file-header { font-size: 12px; }
+
+  /* ==== Tekst 10px na mobile ==== */
+  body, .bubble { font-size: 10px; line-height: 1.45; }
+  .d2h-diff-table { font-size: 10px; }
+  .d2h-file-header { font-size: 10px; }
+
+  header .title { font-size: 12px; }
+  .tour-title { font-size: 12px; }
+  .hint { font-size: 10px; }
+  .steps li strong { font-size: 11px; }
+  .steps li small { font-size: 10px; }
 }
