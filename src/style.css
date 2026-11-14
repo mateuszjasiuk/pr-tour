@@ -114,3 +114,28 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
     font-family: monospace;
   }
 }
+
+/* FIX: wyłącz auto-powiększanie tekstu w mobile Chrome/Safari */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* FIX: w media query wzmocnij aside */
+@media (max-width: 800px) {
+  aside {
+    overflow: visible !important;
+    position: static !important;
+    max-height: none !important;
+  }
+  #diff {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+}
+
+/* DIAG: kolorowe tła — zobacz gdzie jest granica paneli */
+@media (max-width: 800px) {
+  aside { background: rgba(255, 0, 0, 0.12) !important; }
+  #diff { background: rgba(0, 200, 0, 0.12) !important; }
+}
