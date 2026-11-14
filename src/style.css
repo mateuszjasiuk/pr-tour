@@ -50,7 +50,6 @@
 html, body {
   margin: 0;
   height: 100%;
-  overflow-x: hidden;
 }
 
 body {
@@ -141,28 +140,22 @@ header .title span {
 .layout {
   flex: 1;
   min-height: 0;
-  min-width: 0;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
 }
 aside {
   overflow: auto;
-  min-width: 0;
   padding: 16px;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  position: relative;
-  z-index: 1;
 }
 #diff {
-  position: relative;
-  z-index: 0;
   padding: 16px;
   min-width: 0;
-  min-height: 0;
   overflow: auto;
+  position: relative;
 }
 
 /* ===== Panel boczny ===== */
@@ -260,26 +253,16 @@ tr.tour-hl td.d2h-code-linenumber {
   .shell { height: auto; }
   header { position: sticky; top: 0; z-index: 3; }
 
-  .layout {
-    grid-template-columns: 1fr;
-    min-width: 0;
-  }
+  .layout { grid-template-columns: 1fr; }
 
-  /* aside nie tworzy już osobnej warstwy stackingu ani własnego scrolla */
   aside {
     border-right: 0;
     border-bottom: 1px solid var(--border);
-    overflow-x: hidden;
-    overflow-y: visible;
-    position: static;
-    z-index: auto;
   }
+
   #diff {
     padding: 8px;
-    overflow-x: auto;
-    overflow-y: visible;
-    min-width: 0;
-    position: static;
+    overflow: auto;
   }
 
   .steps li:not(.active) { display: none; }
@@ -288,7 +271,6 @@ tr.tour-hl td.d2h-code-linenumber {
   /* ==== Tekst 10px na mobile ==== */
   body, .bubble { font-size: 10px; line-height: 1.45; }
 
-  /* diff2html ma własne klasy z font-size — nadpisz wszystkie */
   .d2h-wrapper,
   .d2h-file-wrapper,
   .d2h-file-header,
