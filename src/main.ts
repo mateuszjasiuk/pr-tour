@@ -112,20 +112,33 @@ function fromHash(): Tour | null {
 function shell(o: string, r: string, n: number) {
   const stale = tour.head && !pull.head.sha.startsWith(tour.head);
   
-  // Wyciągamy wszystkie linki z tekstu (tytuł + opis)
   const text = (pull.title || '') + ' ' + (pull.body || '');
-  const allLinks = text.match(/https?:\/\/[^\s)\]<"]+/g) || [];
   
-  // Filtrujemy tylko te ze Stacka i usuwamy duplikaty
-  const stackLinks = [...new Set(allLinks)].filter(link => 
-    link.includes('stackoverflow.com/') || link.includes('stackexchange.com/')
-  );
+  // 1. Szukamy linków do innych PR-ów na GitHubie (Stacked PRs)
+  const ghPrRegex = /https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/g;
+  const allPrMatches = text.match(ghPrRegex) || [];
+  // Usuwamy duplikaty i wykluczamy obecny PR
+  const stackLinks = [...new Set(allPrMatches)].filter(link => !link.endsWith(`/pull/${n}`));
+
+  // 2. Sprawdzamy, czy PR jest częścią stosu (branch bazowy to nie main/master)
+  const mainBranches = ['main', 'master', 'develop', 'dev'];
+  const isStacked = pull.base && pull.base.ref && !mainBranches.includes(pull.base.ref);
   
+  // Link do wyszukania PR-a, na którym zbudowany jest ten PR
+  const parentPrSearch = isStacked 
+    ? `https://github.com/${o}/${r}/pulls?q=is%3Apr+head%3A${pull.base.ref}` 
+    : '';
+
   app.innerHTML = `<div class="shell">
     <header>
       <a class="brand" href="/">🧭</a>
       <a class="title" href="${esc(pull.html_url)}" target="_blank" rel="noopener">${esc(pull.title)} <span>${esc(`${o}/${r}#${n}`)}</span></a>
-      ${stackLinks.length ? `<div class="stack-links">${stackLinks.map(link => `<a href="${esc(link)}" target="_blank" rel="noopener" title="${esc(link)}">📚</a>`).join('')}</div>` : ''}
+      
+      <div class="stack-links">
+        ${isStacked ? `<a href="${parentPrSearch}" target="_blank" rel="noopener" title="Find parent PR (base: ${esc(pull.base.ref)})">🥞</a>` : ''}
+        ${stackLinks.map(link => `<a href="${esc(link)}" target="_blank" rel="noopener" title="${esc(link)}">🔗</a>`).join('')}
+      </div>
+
       ${token() ? '<button id="signout" class="ghost">Sign out</button>' : '<button id="signin" class="ghost">Sign in</button>'}
     </header>
     ${stale ? `<div class="banner">This tour was written for commit <code>${esc(tour.head!.slice(0, 7))}</code>; the PR has new commits since, so some lines may have moved.</div>` : ''}
