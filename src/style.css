@@ -122,9 +122,10 @@ html {
 }
 
 @media (max-width: 800px) {
-  /* Numery linii dostają tło swojego wiersza, żeby kod spod spodu nie prześwitywał */
+  /* Tło dla numerków + wysunięcie ich na wierzch (z-index) */
   .d2h-code-linenumber,
   .d2h-code-side-linenumber {
-    background-color: inherit !important;
+    background-color: var(--bg) !important;
+    z-index: 10 !important;
   }
 }
