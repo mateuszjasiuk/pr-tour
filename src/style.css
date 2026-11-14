@@ -264,16 +264,22 @@ tr.tour-hl td.d2h-code-linenumber {
     grid-template-columns: 1fr;
     min-width: 0;
   }
+
+  /* aside nie tworzy już osobnej warstwy stackingu ani własnego scrolla */
   aside {
     border-right: 0;
     border-bottom: 1px solid var(--border);
     overflow-x: hidden;
+    overflow-y: visible;
+    position: static;
+    z-index: auto;
   }
   #diff {
     padding: 8px;
     overflow-x: auto;
     overflow-y: visible;
     min-width: 0;
+    position: static;
   }
 
   .steps li:not(.active) { display: none; }
@@ -281,8 +287,21 @@ tr.tour-hl td.d2h-code-linenumber {
 
   /* ==== Tekst 10px na mobile ==== */
   body, .bubble { font-size: 10px; line-height: 1.45; }
-  .d2h-diff-table { font-size: 10px; }
-  .d2h-file-header { font-size: 10px; }
+
+  /* diff2html ma własne klasy z font-size — nadpisz wszystkie */
+  .d2h-wrapper,
+  .d2h-file-wrapper,
+  .d2h-file-header,
+  .d2h-diff-table,
+  .d2h-code-line,
+  .d2h-code-side-line,
+  .d2h-code-line-ctn,
+  .d2h-code-linenumber,
+  .d2h-file-name,
+  .d2h-tag {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
 
   header .title { font-size: 12px; }
   .tour-title { font-size: 12px; }
