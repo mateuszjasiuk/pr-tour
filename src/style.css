@@ -100,3 +100,17 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
 .pat { margin-top: 24px; }
 .pat summary { cursor: pointer; color: var(--muted); }
 .pat form { display: flex; gap: 8px; }
+
+@media (max-width: 800px) {
+  body::before {
+    content: "MOBILE-OK";
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 99999;
+    background: red;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 14px;
+    font-family: monospace;
+  }
+}
