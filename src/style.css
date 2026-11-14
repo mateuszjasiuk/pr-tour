@@ -1,147 +1,274 @@
-:root {
-  --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --border: #d1d9e0; --panel: #f6f8fa;
-  --accent: #0969da; --hl: #fff8c5; --hl-edge: #d4a72c; --danger: #cf222e; --bubble: #ddf4ff;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #3d444d; --panel: #151b23;
-    --accent: #4493f8; --hl: #3b2e0a; --hl-edge: #bb8009; --danger: #f85149; --bubble: #0c2d6b;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #3d444d; --panel: #151b23;
-  --accent: #4493f8; --hl: #3b2e0a; --hl-edge: #bb8009; --danger: #f85149; --bubble: #0c2d6b;
-  color-scheme: dark;
-}
+import 'diff2html/bundles/css/diff2html.min.css';
+import './style.css';
+import { parse, html } from 'diff2html';
+import type { DiffFile } from 'diff2html/lib/types';
+import LZString from 'lz-string';
+import { extractTour, fromCodeTour, type Step, type Tour } from './tour.ts';
+import { AuthError, getPull, getPullDiff, type Pull } from './github.ts';
 
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-body { background: var(--bg); color: var(--fg); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
-a { color: var(--accent); }
-code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel); padding: 1px 4px; border-radius: 4px; }
-button, input { font: inherit; color: inherit; }
-button { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
-button:disabled { opacity: .45; cursor: default; }
-button.ghost { background: transparent; }
-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
-.err { color: var(--danger); }
+// ---------- small utils ----------
+const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const store = {
+  get: (k: string, s: Storage = localStorage) => { try { return s.getItem(k); } catch { return null; } },
+  set: (k: string, v: string, s: Storage = localStorage) => { try { s.setItem(k, v); } catch {} },
+  del: (k: string, s: Storage = localStorage) => { try { s.removeItem(k); } catch {} },
+};
 
-.landing, .status { max-width: 560px; margin: 12vh auto; padding: 0 16px; }
-.landing h1 { font-size: 28px; }
-.landing p { color: var(--muted); }
-.landing form { display: flex; gap: 8px; }
-
-header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
-header .brand { text-decoration: none; font-size: 20px; }
-header .title { flex: 1; min-width: 0; color: var(--fg); text-decoration: none; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-header .title span { color: var(--muted); font-weight: 400; margin-left: 6px; }
-.banner { padding: 8px 16px; background: var(--hl); border-bottom: 1px solid var(--hl-edge); }
-
-/* Style dla linków do Stacka w headerze */
-.stack-links { display: flex; gap: 8px; align-items: center; margin-right: 8px; }
-.stack-links a { font-size: 16px; text-decoration: none; }
-
-.shell { height: 100vh; display: flex; flex-direction: column; }
-.layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px minmax(0, 1fr); }
-aside { overflow: auto; padding: 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
-#diff { padding: 16px; min-width: 0; overflow: auto; }
-aside, #diff { min-height: 0; }
-#diff { position: relative; }
-
-.tour-title { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
-.nav { display: flex; align-items: center; justify-content: space-between; }
-.nav span { color: var(--muted); }
-.hint { margin: 0; color: var(--muted); font-size: 12px; }
-
-.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
-.steps li { counter-increment: s; position: relative; padding: 6px 8px 6px 34px; border-radius: 6px; cursor: pointer; }
-.steps li::before { content: counter(s); position: absolute; left: 8px; top: 7px; width: 18px; height: 18px; border-radius: 50%; background: var(--border); font-size: 11px; text-align: center; line-height: 18px; }
-.steps li.active { background: var(--panel); }
-.steps li.active::before { background: var(--accent); color: #fff; }
-.steps li strong { display: block; font-weight: 500; overflow-wrap: anywhere; }
-.steps li small { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; overflow-wrap: anywhere; }
-
-.bubble { background: var(--bubble); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px 12px; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
-.bubble > b { color: var(--muted); font-weight: 500; margin-right: 6px; }
-.bubble p { margin: 6px 0 0; }
-.missing p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
-.tour-note td { padding: 6px 12px 10px 60px; background: var(--bg); }
-
-.d2h-file-wrapper { margin-bottom: 16px; }
-tr.tour-hl td { background: var(--hl) !important; }
-tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
-
-@media (max-width: 800px) {
-  .shell { height: auto; padding-bottom: 70px; }
-  
-  /* Header musi być wyżej niż numerki linii, ale niżej niż dolny pasek */
-  header { position: sticky; top: 0; z-index: 50; }
-  
-  .layout { grid-template-columns: 1fr; }
-  
-  aside {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-    overflow: visible !important;
-    position: static !important;
-    max-height: none !important;
-  }
-  
-  #diff {
-    padding: 8px;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-  }
-  
-  .steps li:not(.active) { display: none; }
-  .tour-note td { padding-left: 12px; }
-  
-  /* Rozmiary czcionek */
-  body, .bubble { font-size: 10px; line-height: 1.45; }
-  .bubble code { font-size: 10px; }
-  .d2h-diff-table,
-  .d2h-code-line,
-  .d2h-code-side-line,
-  .d2h-code-line-ctn,
-  .d2h-code-linenumber,
-  .d2h-file-header,
-  .d2h-file-name,
-  .d2h-tag { font-size: 10px !important; line-height: 1.4 !important; }
-  
-  .steps li strong { font-size: 11px; }
-  .steps li small { font-size: 10px; }
-  .tour-title { font-size: 12px; }
-  .hint { font-size: 10px; }
-  header .title { font-size: 12px; }
-
-  /* Tło dla numerków linii + z-index: 2 (kod ma 1, header ma 50) */
-  .d2h-code-linenumber,
-  .d2h-code-side-linenumber {
-    background-color: var(--bg) !important;
-    z-index: 2 !important; 
-  }
-
-  /* Przyklejony pasek nawigacji na dole */
-  .nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--panel);
-    border-top: 1px solid var(--border);
-    padding: 10px 16px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    margin: 0;
-    z-index: 100;
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
-  }
-
-  .nav button { padding: 8px 16px; }
+/** Just enough Markdown for step notes: paragraphs, `code`, **bold**, _em_, [links](https://…). */
+function md(src: string): string {
+  return src.split(/\n\s*\n/).map((p) => `<p>${esc(p)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|\W)_([^_]+)_(?=\W|$)/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\n/g, '<br>')}</p>`).join('');
 }
 
-.pat { margin-top: 24px; }
-.pat summary { cursor: pointer; color: var(--muted); }
-.pat form { display: flex; gap: 8px; }
+// ---------- auth (token lives only in this browser) ----------
+const TOKEN = 'prtour.token';
+(function absorbTokenFromRedirect() {
+  const m = location.hash.match(/access_token=([^&]+)/);
+  if (!m) return;
+  store.set(TOKEN, decodeURIComponent(m[1]));
+  const savedHash = store.get('prtour.hash', sessionStorage) ?? '';
+  store.del('prtour.hash', sessionStorage);
+  history.replaceState(null, '', location.pathname + location.search + savedHash);
+})();
+const token = () => store.get(TOKEN);
+function signIn() {
+  store.set('prtour.hash', location.hash, sessionStorage);
+  location.href = `/api/login?return=${encodeURIComponent(location.pathname + location.search)}`;
+}
+function signOut() { store.del(TOKEN); location.reload(); }
+
+// ---------- state ----------
+const app = $('#app');
+const route = location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/);
+let pull: Pull;
+let files: DiffFile[] = [];
+let tour: Tour = { steps: [] };
+let current = 0;
+
+if (route) load(route[1], route[2], Number(route[3]));
+else landing();
+
+// ---------- landing ----------
+function landing() {
+  app.innerHTML = `
+    <main class="landing">
+      <h1>🧭 PR Tour</h1>
+      <p>Guided walkthroughs of GitHub pull requests. The tour lives in the PR description, in a collapsed block, so there's nothing to store.</p>
+      <form id="go"><input name="url" placeholder="https://github.com/owner/repo/pull/123" autofocus required /><button>Open</button></form>
+      <p class="err" id="go-err"></p>
+    </main>`;
+  $('#go').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = new FormData(e.target as HTMLFormElement).get('url') as string;
+    const m = v.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+    if (m) location.href = `/${m[1]}/${m[2]}/pull/${m[3]}`;
+    else $('#go-err').textContent = 'That doesn’t look like a GitHub pull request URL.';
+  });
+}
+
+// ---------- load ----------
+async function load(o: string, r: string, n: number) {
+  app.innerHTML = `<p class="status">Loading ${esc(`${o}/${r}#${n}`)}…</p>`;
+  try {
+    const [p, diff] = await Promise.all([getPull(o, r, n, token()), getPullDiff(o, r, n, token())]);
+    pull = p;
+    files = parse(diff);
+    tour = fromHash() ?? extractTour(pull.body) ?? { steps: [] };
+    const s = Number(new URLSearchParams(location.search).get('step'));
+    current = s >= 1 && s <= tour.steps.length ? s - 1 : 0;
+    shell(o, r, n);
+    go(current);
+    fetchStackNav(o, r, pull, token());
+  } catch (e) {
+    if (e instanceof AuthError) {
+      app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p>${esc(e.message)}</p><button id="signin">Sign in with GitHub</button>
+        <details class="pat"><summary>Or use a personal access token</summary>
+          <p>A <a href="https://github.com/settings/tokens/new?scopes=repo&description=PR%20Tour" target="_blank" rel="noopener">classic token with the <code>repo</code> scope</a> works on any repo you can read. It stays in this browser only.</p>
+          <form id="pat"><input name="t" type="password" placeholder="ghp_…" autocomplete="off" required /><button>Use token</button></form>
+        </details></main>`;
+      $('#signin').onclick = signIn;
+      $('#pat').addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        store.set(TOKEN, (new FormData(ev.target as HTMLFormElement).get('t') as string).trim());
+        location.reload();
+      });
+    } else {
+      app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p class="err">${esc(String((e as Error).message))}</p></main>`;
+    }
+  }
+}
+
+function fromHash(): Tour | null {
+  const m = location.hash.match(/tour=([^&]+)/);
+  if (!m) return null;
+  try { return fromCodeTour(JSON.parse(LZString.decompressFromEncodedURIComponent(m[1]) ?? 'null')); } catch { return null; }
+}
+
+// ---------- layout ----------
+function shell(o: string, r: string, n: number) {
+  const stale = tour.head && !pull.head.sha.startsWith(tour.head);
+  
+  const text = (pull.title || '') + ' ' + (pull.body || '');
+  
+  // 1. Szukamy linków do innych PR-ów w opisie
+  const ghPrRegex = /https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/g;
+  const allPrMatches = text.match(ghPrRegex) || [];
+  const stackLinks = [...new Set(allPrMatches)].filter(link => !link.endsWith(`/pull/${n}`));
+
+  app.innerHTML = `<div class="shell">
+    <header>
+      <a class="brand" href="/">🧭</a>
+      <a class="title" href="${esc(pull.html_url)}" target="_blank" rel="noopener">${esc(pull.title)} <span>${esc(`${o}/${r}#${n}`)}</span></a>
+      
+      <div class="stack-links">
+        ${stackLinks.map(link => `<a href="${esc(link)}" target="_blank" rel="noopener" title="${esc(link)}">🔗</a>`).join('')}
+      </div>
+
+      <div class="stack-nav" id="stack-nav-container"></div>
+
+      ${token() ? '<button id="signout" class="ghost">Sign out</button>' : '<button id="signin" class="ghost">Sign in</button>'}
+    </header>
+    ${stale ? `<div class="banner">This tour was written for commit <code>${esc(tour.head!.slice(0, 7))}</code>; the PR has new commits since, so some lines may have moved.</div>` : ''}
+    <div class="layout">
+      <aside id="side"></aside>
+      <section id="diff"></section>
+    </div></div>`;
+  $('#diff').innerHTML = html(files, { outputFormat: 'line-by-line', drawFileList: false, matching: 'lines', colorScheme: 'auto' as never });
+  document.getElementById('signin')?.addEventListener('click', signIn);
+  document.getElementById('signout')?.addEventListener('click', signOut);
+  document.addEventListener('keydown', onKey);
+}
+
+// ---------- stack navigation ----------
+async function fetchStackNav(o: string, r: string, p: Pull, tok: string | null) {
+  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
+  if (tok) headers.Authorization = `Bearer ${tok}`;
+  
+  const base = (p as any).base?.ref;
+  const head = (p as any).head?.ref;
+  let prev: number | null = null;
+  let next: number | null = null;
+
+  const mainBranches = ['main', 'master', 'develop', 'dev'];
+
+  // Poprzedni PR w stosie (szukamy PR-a, którego head = nasz base)
+  if (base && !mainBranches.includes(base)) {
+    try {
+      const res = await fetch(`https://api.github.com/search/issues?q=repo:${o}/${r}+is:pr+head:${encodeURIComponent(base)}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) prev = data.items[0].number;
+      }
+    } catch {}
+  }
+
+  // Następny PR w stosie (szukamy PR-a, którego base = nasz head)
+  if (head) {
+    try {
+      const res = await fetch(`https://api.github.com/search/issues?q=repo:${o}/${r}+is:pr+base:${encodeURIComponent(head)}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) next = data.items[0].number;
+      }
+    } catch {}
+  }
+
+  const container = document.getElementById('stack-nav-container');
+  if (container && (prev || next)) {
+    container.innerHTML = `
+      ${prev ? `<a href="/${o}/${r}/pull/${prev}" title="Previous PR in stack (#${prev})">⏮</a>` : ''}
+      ${next ? `<a href="/${o}/${r}/pull/${next}" title="Next PR in stack (#${next})">⏭</a>` : ''}
+    `;
+  }
+}
+
+// ---------- sidebar ----------
+function renderSide() {
+  const steps = tour.steps;
+  $('#side').innerHTML = steps.length ? `
+    ${tour.title ? `<h2 class="tour-title">${esc(tour.title)}</h2>` : ''}
+    <div class="nav">
+      <button id="prev" ${current === 0 ? 'disabled' : ''}>← Prev</button>
+      <span>${current + 1} / ${steps.length}</span>
+      <button id="next" ${current >= steps.length - 1 ? 'disabled' : ''}>Next →</button>
+    </div>
+    <ol class="steps">
+      ${steps.map((st, i) => `
+        <li class="${i === current ? 'active' : ''}" data-i="${i}">
+          <strong>${esc(st.title || where(st).split('/').pop() || 'Note')}</strong>
+          ${st.file ? `<small>${esc(where(st))}</small>` : ''}
+        </li>`).join('')}
+    </ol>`
+    : '<p class="hint">This PR has no tour yet. Tours are read from a CodeTour JSON block in the PR description.</p>';
+
+  document.getElementById('prev')?.addEventListener('click', () => go(current - 1));
+  document.getElementById('next')?.addEventListener('click', () => go(current + 1));
+  $('#side').querySelectorAll<HTMLElement>('.steps li').forEach((li) => (li.onclick = () => go(Number(li.dataset.i))));
+}
+
+// ---------- navigation & highlighting ----------
+function go(i: number) {
+  current = Math.max(0, i);
+  const url = new URL(location.href);
+  if (tour.steps.length) url.searchParams.set('step', String(current + 1)); else url.searchParams.delete('step');
+  history.replaceState(null, '', url);
+  renderSide();
+  highlight();
+}
+
+/** `file:line-end` as written in the step, or '' for a plain note. */
+function where(s: Step): string {
+  if (!s.file) return '';
+  return `${s.file}${s.line ? `:${s.line}${s.endLine ? `-${s.endLine}` : ''}` : ''}`;
+}
+
+function rowsFor(s: Step): HTMLTableRowElement[] {
+  const { file, line } = s;
+  if (!file || !line) return [];
+
+  const idx = files.findIndex((f) => f.newName === file);
+  const wrapper = $('#diff').querySelectorAll<HTMLElement>('.d2h-file-wrapper')[idx];
+  if (!wrapper) return [];
+  const end = s.endLine ?? line;
+  return [...wrapper.querySelectorAll<HTMLTableRowElement>('tbody tr')].filter((tr) => {
+    const n = Number(tr.querySelector('.line-num2')?.textContent?.trim() || NaN);
+    return n >= line && n <= end;
+  });
+}
+
+function noteHtml(s: Step) {
+  return `<div class="bubble"><b>${current + 1}/${tour.steps.length}</b> ${s.title ? `<strong>${esc(s.title)}</strong>` : ''}${s.body ? md(s.body) : ''}</div>`;
+}
+
+function highlight() {
+  $('#diff').querySelectorAll('.tour-hl').forEach((el) => el.classList.remove('tour-hl'));
+  $('#diff').querySelectorAll('.tour-note').forEach((el) => el.remove());
+  document.querySelector('.missing')?.remove();
+  const s = tour.steps[current];
+  if (!s) return;
+  const rows = rowsFor(s);
+  if (!rows.length) {
+    $('#side').insertAdjacentHTML('afterbegin', `<div class="missing">${noteHtml(s)}${s.file ? outsideDiff(s) : ''}</div>`);
+    return;
+  }
+  rows.forEach((tr) => tr.classList.add('tour-hl'));
+  rows[rows.length - 1].insertAdjacentHTML('afterend', `<tr class="tour-note"><td colspan="2">${noteHtml(s)}</td></tr>`);
+  rows[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function outsideDiff(s: Step): string {
+  const anchor = s.line ? `#L${s.line}${s.endLine ? `-L${s.endLine}` : ''}` : '';
+  const blob = `https://github.com/${route![1]}/${route![2]}/blob/${pull.head.sha}/${s.file}${anchor}`;
+  return `<p>${s.line ? 'This line isn’t' : 'This file isn’t'} part of the diff. <a href="${esc(blob)}" target="_blank" rel="noopener">View it on GitHub ↗</a></p>`;
+}
+
+function onKey(e: KeyboardEvent) {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'ArrowRight' || e.key === 'j') go(Math.min(current + 1, tour.steps.length - 1));
+  else if (e.key === 'ArrowLeft' || e.key === 'k') go(current - 1);
+}
