@@ -73,14 +73,14 @@
 72|   .shell { height: auto; }
 73|   header { position: sticky; top: 0; z-index: 3; }
 74|   .layout { grid-template-columns: 1fr; }
-|   aside { border-right: 0; border-bottom: 1px solid var(--border); }
-|   #diff { padding: 8px; overflow: visible; }
-|   .steps li:not(.active) { display: none; }
-|   .tour-note td { padding-left: 12px; }
-|   body, .bubble { font-size: 13px; }
-|   .d2h-diff-table { font-size: 11px; }
-|   .d2h-file-header { font-size: 12px; }
-| }
-| .pat { margin-top: 24px; }
-| .pat summary { cursor: pointer; color: var(--muted); }
-| .pat form { display: flex; gap: 8px; }
+75|   aside { border-right: 0; border-bottom: 1px solid var(--border); }
+76|   #diff { padding: 8px; overflow: visible; }
+77|   .steps li:not(.active) { display: none; }
+78|   .tour-note td { padding-left: 12px; }
+79|   body, .bubble { font-size: 13px; }
+80|   .d2h-diff-table { font-size: 11px; }
+81|   .d2h-file-header { font-size: 12px; }
+82| }
+83| .pat { margin-top: 24px; }
+84| .pat summary { cursor: pointer; color: var(--muted); }
+85| .pat form { display: flex; gap: 8px; }
