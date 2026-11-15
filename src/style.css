@@ -83,6 +83,11 @@ aside, #diff { min-height: 0; }
 .tour-note td { padding: 6px 12px 10px 60px; background: var(--bg); }
 
 .d2h-file-wrapper { margin-bottom: 16px; }
+/* diff2html sizes the table to the pane, so long lines overflow their cells and the row
+   backgrounds (added, deleted, tour highlight) stay behind when you scroll sideways. */
+.d2h-diff-table { width: max-content; min-width: 100%; }
+.d2h-code-line { width: max-content; }
+.tour-note .bubble { position: sticky; left: 8px; max-width: min(720px, calc(100vw - 440px)); }
 tr.tour-hl td { background: var(--hl) !important; }
 tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
 
@@ -110,6 +115,7 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   
   .steps li:not(.active) { display: none; }
   .tour-note td { padding-left: 12px; }
+  .tour-note .bubble { max-width: calc(100vw - 48px); }
   
   /* Rozmiary czcionek */
   body, .bubble { font-size: 10px; line-height: 1.45; }
