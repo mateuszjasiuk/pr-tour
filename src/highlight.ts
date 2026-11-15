@@ -26,22 +26,15 @@ const BY_EXT: Record<string, string> = {
 };
 
 /**
- * Colours the code in the rendered diff, one file at a time. Each hunk is tokenized as two blocks
- * (old side and new side), so comments and strings that span lines are coloured correctly.
+ * Colours one file of the rendered diff. Each hunk is tokenized as two blocks (old side and new
+ * side), so comments and strings that span lines are coloured correctly.
  */
-export async function highlightDiff(root: HTMLElement, files: DiffFile[]): Promise<void> {
-  const wrappers = root.querySelectorAll<HTMLElement>('.d2h-file-wrapper');
+export async function highlightFile(root: HTMLElement, file: DiffFile): Promise<void> {
+  const lang = langFor(file.newName === '/dev/null' ? file.oldName : file.newName);
+  if (!lang) return;
 
-  for (const [i, wrapper] of wrappers.entries()) {
-    const name = files[i]?.newName === '/dev/null' ? files[i].oldName : files[i]?.newName;
-    const lang = langFor(name);
-    if (!lang) continue;
-
-    const h = await highlighterFor(lang);
-    for (const hunk of hunks(wrapper)) colourHunk(h, lang, hunk);
-    // Let the browser paint and handle scrolling between files.
-    await new Promise((r) => setTimeout(r));
-  }
+  const h = await highlighterFor(lang);
+  for (const hunk of hunks(root)) colourHunk(h, lang, hunk);
 }
 
 /** Colours consecutive lines of one file, given their `.d2h-code-line-ctn` elements in order. */

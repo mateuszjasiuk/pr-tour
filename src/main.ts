@@ -84,7 +84,6 @@ async function load(o: string, r: string, n: number) {
     shell(o, r, n);
     go(current);
     fetchStackNav(o, r, pull, token());
-    import('./highlight.ts').then((m) => m.highlightDiff($('#diff'), files)).catch(() => {});
   } catch (e) {
     if (e instanceof AuthError) {
       app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p>${esc(e.message)}</p><button id="signin">Sign in with GitHub</button>
@@ -140,11 +139,13 @@ function shell(o: string, r: string, n: number) {
       <aside id="side"></aside>
       <section id="diff"></section>
     </div></div>`;
-  $('#diff').innerHTML = html(files, { outputFormat: 'line-by-line', drawFileList: false, matching: 'lines', colorScheme: 'auto' as never });
+  $('#diff').innerHTML = files.map((f, i) =>
+    `<div class="lazy-file" data-i="${i}" style="height:${estimatedHeight(f)}px"><div class="lazy-name">${esc(fileName(f))}</div></div>`).join('');
+  watchFiles();
   document.getElementById('signin')?.addEventListener('click', signIn);
   document.getElementById('signout')?.addEventListener('click', signOut);
   $('#wrap').onclick = () => setWrap(!document.body.classList.contains('wrap'));
-  setWrap(store.get(WRAP) ? store.get(WRAP) === '1' : matchMedia('(max-width: 800px)').matches, false);
+  setWrap(store.get(WRAP) ? store.get(WRAP) === '1' : isMobile(), false);
   document.addEventListener('keydown', onKey);
 }
 
@@ -155,6 +156,42 @@ function setWrap(on: boolean, remember = true) {
   document.body.classList.toggle('wrap', on);
   $('#wrap').setAttribute('aria-pressed', String(on));
   if (remember) store.set(WRAP, on ? '1' : '0');
+}
+
+// ---------- diff, built file by file as it nears the screen ----------
+/** Same breakpoint as the mobile layout in style.css. */
+const isMobile = () => matchMedia('(max-width: 800px)').matches;
+const fileName = (f: DiffFile) => (f.newName === '/dev/null' ? f.oldName : f.newName);
+
+/** A guess for a file's height before it is built, so the scrollbar and jumps stay roughly right. */
+function estimatedHeight(f: DiffFile): number {
+  const lines = f.blocks.reduce((n, b) => n + b.lines.length + 1, 0);
+  return 40 + lines * (isMobile() ? 15 : 20);
+}
+
+let observer: IntersectionObserver | undefined;
+
+function watchFiles() {
+  // On desktop the diff pane scrolls by itself; on mobile the whole page does.
+  const pane = $('#diff');
+  const root = isMobile() ? null : pane;
+  observer = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) renderFile(Number((e.target as HTMLElement).dataset.i));
+  }, { root, rootMargin: '1500px 0px' });
+  pane.querySelectorAll('.lazy-file').forEach((el) => observer!.observe(el));
+}
+
+/** Builds one file's diff (once) and colours it. Returns its element. */
+function renderFile(i: number): HTMLElement {
+  const el = $(`.lazy-file[data-i="${i}"]`);
+  if (el.dataset.built) return el;
+
+  el.dataset.built = '1';
+  el.style.height = '';
+  el.innerHTML = html([files[i]], { outputFormat: 'line-by-line', drawFileList: false, matching: 'lines', colorScheme: 'auto' as never });
+  observer?.unobserve(el);
+  import('./highlight.ts').then((m) => m.highlightFile(el, files[i])).catch(() => {});
+  return el;
 }
 
 // ---------- stack navigation ----------
@@ -245,8 +282,8 @@ function rowsFor(s: Step): HTMLTableRowElement[] {
   if (!file || !line) return [];
 
   const idx = files.findIndex((f) => f.newName === file);
-  const wrapper = $('#diff').querySelectorAll<HTMLElement>('.d2h-file-wrapper')[idx];
-  if (!wrapper) return [];
+  if (idx < 0) return [];
+  const wrapper = renderFile(idx);
   const end = s.endLine ?? line;
   return [...wrapper.querySelectorAll<HTMLTableRowElement>('tbody tr')].filter((tr) => {
     const n = Number(tr.querySelector('.line-num2')?.textContent?.trim() || NaN);

@@ -96,6 +96,8 @@ body.wrap .d2h-code-line-ctn { display: inline; white-space: pre-wrap; overflow-
   :root:not([data-theme="light"]) .d2h-code-line-ctn span[style] { color: var(--shiki-dark) !important; }
 }
 :root[data-theme="dark"] .d2h-code-line-ctn span[style] { color: var(--shiki-dark) !important; }
+.lazy-file:not([data-built]) { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 16px; }
+.lazy-name { padding: 8px 10px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .outside { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 16px; }
 .outside-head { padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .outside-scroll { overflow-x: auto; }
