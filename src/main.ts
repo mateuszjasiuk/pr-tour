@@ -343,7 +343,7 @@ function reveal(el: HTMLElement) {
 function noteInSidebar(s: Step) {
   const link = s.file ? `<p>${s.line ? 'This line isn’t' : 'This file isn’t'} part of the diff. <a href="${esc(blobUrl(s))}" target="_blank" rel="noopener">View it on GitHub ↗</a></p>` : '';
   $('#side').insertAdjacentHTML('afterbegin', `<div class="missing">${noteHtml(s)}${link}</div>`);
-  $('.missing').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  reveal($('.missing'));
 }
 
 function blobUrl(s: Step): string {
