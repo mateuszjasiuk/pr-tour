@@ -134,11 +134,16 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   .outside-code { font-size: 10px; }
 
   /* One line number instead of two: the new one, or the old one on deleted lines. */
-  .d2h-code-linenumber { width: 3.5em; }
+  /* diff2html makes every line number position: absolute. Next to the sticky header and the fixed
+     nav, iOS Safari gives thousands of them their own layer on a big PR and kills the tab, so on
+     mobile they are plain table cells (and scroll sideways with the code). */
+  .d2h-code-linenumber { position: static; display: table-cell; width: 3.5em; }
   .d2h-code-linenumber .line-num1, .d2h-code-linenumber .line-num2 { float: none; width: 100%; text-align: right; }
   .d2h-code-linenumber .line-num1, .d2h-code-linenumber.d2h-del .line-num2 { display: none; }
   .d2h-code-linenumber.d2h-del .line-num1 { display: block; }
-  .d2h-code-line { padding: 0 1em 0 4em; }
+  .d2h-code-line { padding: 0 1em 0 0.5em; }
+  /* Skip layout and painting of files that are off-screen. */
+  .d2h-file-wrapper { content-visibility: auto; contain-intrinsic-size: auto 600px; }
   
   /* Rozmiary czcionek */
   body, .bubble { font-size: 10px; line-height: 1.45; }
@@ -157,13 +162,6 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   .tour-title { font-size: 12px; }
   .hint { font-size: 10px; }
   header .title { font-size: 12px; }
-
-  /* Tło dla numerków linii + z-index: 2 (kod ma 1, header ma 50) */
-  .d2h-code-linenumber,
-  .d2h-code-side-linenumber {
-    background-color: var(--bg) !important;
-    z-index: 2 !important; 
-  }
 
   /* Przyklejony pasek nawigacji na dole */
   .nav {
