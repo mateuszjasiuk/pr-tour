@@ -254,6 +254,7 @@ function highlight() {
   const rows = rowsFor(s);
   if (!rows.length) {
     $('#side').insertAdjacentHTML('afterbegin', `<div class="missing">${noteHtml(s)}${s.file ? outsideDiff(s) : ''}</div>`);
+    $('.missing').scrollIntoView({ block: 'center', behavior: 'smooth' });
     return;
   }
   rows.forEach((tr) => tr.classList.add('tour-hl'));
