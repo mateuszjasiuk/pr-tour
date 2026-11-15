@@ -313,7 +313,30 @@ function highlight() {
   }
   rows.forEach((tr) => tr.classList.add('tour-hl'));
   rows[rows.length - 1].insertAdjacentHTML('afterend', `<tr class="tour-note"><td colspan="2">${noteHtml(s)}</td></tr>`);
-  rows[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+  reveal(rows[0]);
+}
+
+let settle: (() => void) | undefined;
+
+/**
+ * Jumps to a step's first line. Files near it get built and coloured right after the jump and change
+ * height, so for a moment it keeps the line centred, until the user touches or scrolls.
+ */
+function reveal(el: HTMLElement) {
+  settle?.();
+  el.scrollIntoView({ block: 'center' });
+
+  const ro = new ResizeObserver(() => el.isConnected && el.scrollIntoView({ block: 'center' }));
+  document.querySelectorAll('.lazy-file').forEach((f) => ro.observe(f));
+  const stop = () => {
+    ro.disconnect();
+    clearTimeout(timer);
+    for (const ev of ['touchstart', 'wheel', 'mousedown']) removeEventListener(ev, stop, true);
+    settle = undefined;
+  };
+  const timer = setTimeout(stop, 1500);
+  for (const ev of ['touchstart', 'wheel', 'mousedown']) addEventListener(ev, stop, { capture: true, passive: true });
+  settle = stop;
 }
 
 /** Shows the note above the step list, for plain notes and steps whose file can't be loaded. */
@@ -356,7 +379,7 @@ async function showOutside(s: Step) {
     <div class="outside-head">Outside this PR’s changes · <a href="${esc(blobUrl(s))}" target="_blank" rel="noopener">${esc(where(s))} ↗</a></div>
     <div class="outside-scroll"><table class="outside-code"><tbody>${rows.join('')}</tbody></table></div>
   </div>`);
-  $('.outside .tour-hl').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  reveal($('.outside .tour-hl'));
 
   const ctns = [...$('.outside').querySelectorAll<HTMLElement>('.d2h-code-line-ctn')];
   import('./highlight.ts').then((m) => m.highlightLines(ctns, file)).catch(() => {});

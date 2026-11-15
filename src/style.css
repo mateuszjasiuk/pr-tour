@@ -144,8 +144,6 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   .d2h-code-linenumber .line-num1, .d2h-code-linenumber.d2h-del .line-num2 { display: none; }
   .d2h-code-linenumber.d2h-del .line-num1 { display: block; }
   .d2h-code-line { padding: 0 1em 0 0.5em; }
-  /* Skip layout and painting of files that are off-screen. */
-  .d2h-file-wrapper { content-visibility: auto; contain-intrinsic-size: auto 600px; }
   
   /* Rozmiary czcionek */
   body, .bubble { font-size: 10px; line-height: 1.45; }
