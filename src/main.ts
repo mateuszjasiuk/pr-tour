@@ -4,7 +4,7 @@ import { parse, html } from 'diff2html';
 import type { DiffFile } from 'diff2html/lib/types';
 import LZString from 'lz-string';
 import { extractTour, fromCodeTour, type Step, type Tour } from './tour.ts';
-import { AuthError, getPull, getPullDiff, type Pull } from './github.ts';
+import { AuthError, getFileAt, getPull, getPullDiff, type Pull } from './github.ts';
 
 // ---------- small utils ----------
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
@@ -262,12 +262,16 @@ function highlight() {
   $('#diff').querySelectorAll('.tour-hl').forEach((el) => el.classList.remove('tour-hl'));
   $('#diff').querySelectorAll('.tour-note').forEach((el) => el.remove());
   document.querySelector('.missing')?.remove();
+  document.querySelector('.outside')?.remove();
   const s = tour.steps[current];
   if (!s) return;
   const rows = rowsFor(s);
+  if (!rows.length && s.file && s.line) {
+    showOutside(s);
+    return;
+  }
   if (!rows.length) {
-    $('#side').insertAdjacentHTML('afterbegin', `<div class="missing">${noteHtml(s)}${s.file ? outsideDiff(s) : ''}</div>`);
-    $('.missing').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    noteInSidebar(s);
     return;
   }
   rows.forEach((tr) => tr.classList.add('tour-hl'));
@@ -275,10 +279,50 @@ function highlight() {
   rows[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
-function outsideDiff(s: Step): string {
+/** Shows the note above the step list, for plain notes and steps whose file can't be loaded. */
+function noteInSidebar(s: Step) {
+  const link = s.file ? `<p>${s.line ? 'This line isn’t' : 'This file isn’t'} part of the diff. <a href="${esc(blobUrl(s))}" target="_blank" rel="noopener">View it on GitHub ↗</a></p>` : '';
+  $('#side').insertAdjacentHTML('afterbegin', `<div class="missing">${noteHtml(s)}${link}</div>`);
+  $('.missing').scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function blobUrl(s: Step): string {
   const anchor = s.line ? `#L${s.line}${s.endLine ? `-L${s.endLine}` : ''}` : '';
-  const blob = `https://github.com/${route![1]}/${route![2]}/blob/${pull.head.sha}/${s.file}${anchor}`;
-  return `<p>${s.line ? 'This line isn’t' : 'This file isn’t'} part of the diff. <a href="${esc(blob)}" target="_blank" rel="noopener">View it on GitHub ↗</a></p>`;
+  return `https://github.com/${route![1]}/${route![2]}/blob/${pull.head.sha}/${s.file}${anchor}`;
+}
+
+const CONTEXT = 10;
+const fileCache = new Map<string, Promise<string>>();
+
+/** For a step on lines the PR didn't change: shows those lines from the PR's head commit above the diff. */
+async function showOutside(s: Step) {
+  const step = current;
+  const file = s.file!, line = s.line!, end = s.endLine ?? line;
+  if (!fileCache.has(file)) fileCache.set(file, getFileAt(route![1], route![2], file, pull.head.sha, token()));
+  const text = await fileCache.get(file)!.catch(() => null);
+  if (step !== current) return;
+
+  const lines = text?.split('\n') ?? [];
+  if (line > lines.length) {
+    noteInSidebar(s);
+    return;
+  }
+
+  const from = Math.max(1, line - CONTEXT);
+  const to = Math.min(lines.length, end + CONTEXT);
+  const rows = lines.slice(from - 1, to).map((code, i) => {
+    const n = from + i;
+    const row = `<tr${n >= line && n <= end ? ' class="tour-hl"' : ''}><td class="outside-ln">${n}</td><td><span class="d2h-code-line-ctn">${esc(code)}</span></td></tr>`;
+    return n === Math.min(end, to) ? `${row}<tr class="tour-note"><td colspan="2">${noteHtml(s)}</td></tr>` : row;
+  });
+  $('#diff').insertAdjacentHTML('afterbegin', `<div class="outside">
+    <div class="outside-head">Outside this PR’s changes · <a href="${esc(blobUrl(s))}" target="_blank" rel="noopener">${esc(where(s))} ↗</a></div>
+    <div class="outside-scroll"><table class="outside-code"><tbody>${rows.join('')}</tbody></table></div>
+  </div>`);
+  $('.outside .tour-hl').scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+  const ctns = [...$('.outside').querySelectorAll<HTMLElement>('.d2h-code-line-ctn')];
+  import('./highlight.ts').then((m) => m.highlightLines(ctns, file)).catch(() => {});
 }
 
 function onKey(e: KeyboardEvent) {

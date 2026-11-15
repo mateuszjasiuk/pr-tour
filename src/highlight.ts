@@ -31,24 +31,44 @@ const BY_EXT: Record<string, string> = {
  */
 export async function highlightDiff(root: HTMLElement, files: DiffFile[]): Promise<void> {
   const wrappers = root.querySelectorAll<HTMLElement>('.d2h-file-wrapper');
-  let highlighter: HighlighterCore | undefined;
 
   for (const [i, wrapper] of wrappers.entries()) {
     const name = files[i]?.newName === '/dev/null' ? files[i].oldName : files[i]?.newName;
-    const lang = BY_EXT[name?.split('.').pop()?.toLowerCase() ?? ''];
+    const lang = langFor(name);
     if (!lang) continue;
 
-    highlighter ??= await createHighlighterCore({
-      themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark.mjs')],
-      langs: [],
-      engine: createJavaScriptRegexEngine(),
-    });
-    if (!highlighter.getLoadedLanguages().includes(lang)) await highlighter.loadLanguage(LANGS[lang]() as never);
-
-    for (const hunk of hunks(wrapper)) colourHunk(highlighter, lang, hunk);
+    const h = await highlighterFor(lang);
+    for (const hunk of hunks(wrapper)) colourHunk(h, lang, hunk);
     // Let the browser paint and handle scrolling between files.
     await new Promise((r) => setTimeout(r));
   }
+}
+
+/** Colours consecutive lines of one file, given their `.d2h-code-line-ctn` elements in order. */
+export async function highlightLines(ctns: HTMLElement[], fileName: string): Promise<void> {
+  const lang = langFor(fileName);
+  if (!lang) return;
+
+  const h = await highlighterFor(lang);
+  const rows: Row[] = ctns.map((ctn) => ({ ctn, side: 'new' }));
+  tokenize(h, lang, rows).forEach((tokens, i) => paint(ctns[i], tokens));
+}
+
+let highlighter: Promise<HighlighterCore> | undefined;
+
+async function highlighterFor(lang: string): Promise<HighlighterCore> {
+  highlighter ??= createHighlighterCore({
+    themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark.mjs')],
+    langs: [],
+    engine: createJavaScriptRegexEngine(),
+  });
+  const h = await highlighter;
+  if (!h.getLoadedLanguages().includes(lang)) await h.loadLanguage(LANGS[lang]() as never);
+  return h;
+}
+
+function langFor(fileName: string | undefined): string | undefined {
+  return BY_EXT[fileName?.split('.').pop()?.toLowerCase() ?? ''];
 }
 
 interface Row { ctn: HTMLElement; side: 'old' | 'new' | 'both' }

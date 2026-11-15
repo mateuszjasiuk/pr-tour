@@ -37,3 +37,9 @@ export const getPull = async (o: string, r: string, n: number, token: string | n
 
 export const getPullDiff = async (o: string, r: string, n: number, token: string | null): Promise<string> =>
   (await gh(`/repos/${o}/${r}/pulls/${n}`, token, { accept: 'application/vnd.github.diff' })).text();
+
+/** A file's text at a commit. */
+export const getFileAt = async (o: string, r: string, path: string, ref: string, token: string | null): Promise<string> => {
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  return (await gh(`/repos/${o}/${r}/contents/${encoded}?ref=${ref}`, token, { accept: 'application/vnd.github.raw+json' })).text();
+};

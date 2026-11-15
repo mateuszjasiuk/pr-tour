@@ -96,6 +96,12 @@ body.wrap .d2h-code-line-ctn { display: inline; white-space: pre-wrap; overflow-
   :root:not([data-theme="light"]) .d2h-code-line-ctn span[style] { color: var(--shiki-dark) !important; }
 }
 :root[data-theme="dark"] .d2h-code-line-ctn span[style] { color: var(--shiki-dark) !important; }
+.outside { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 16px; }
+.outside-head { padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.outside-scroll { overflow-x: auto; }
+.outside-code { border-collapse: collapse; min-width: 100%; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.outside-code td { padding: 0 12px 0 0; vertical-align: top; }
+.outside-code td.outside-ln { width: 1%; padding: 0 8px; text-align: right; color: var(--muted); user-select: none; }
 button[aria-pressed="true"] { background: var(--panel); border-color: var(--accent); color: var(--accent); }
 tr.tour-hl td { background: var(--hl) !important; }
 tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
@@ -125,6 +131,7 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   .steps li:not(.active) { display: none; }
   .tour-note td { padding-left: 12px; }
   .tour-note .bubble { max-width: calc(100vw - 48px); }
+  .outside-code { font-size: 10px; }
 
   /* One line number instead of two: the new one, or the old one on deleted lines. */
   .d2h-code-linenumber { width: 3.5em; }
