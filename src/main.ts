@@ -131,6 +131,7 @@ function shell(o: string, r: string, n: number) {
 
       <div class="stack-nav" id="stack-nav-container"></div>
 
+      <button id="wrap" class="ghost" aria-pressed="false">Wrap</button>
       ${token() ? '<button id="signout" class="ghost">Sign out</button>' : '<button id="signin" class="ghost">Sign in</button>'}
     </header>
     ${stale ? `<div class="banner">This tour was written for commit <code>${esc(tour.head!.slice(0, 7))}</code>; the PR has new commits since, so some lines may have moved.</div>` : ''}
@@ -141,7 +142,18 @@ function shell(o: string, r: string, n: number) {
   $('#diff').innerHTML = html(files, { outputFormat: 'line-by-line', drawFileList: false, matching: 'lines', colorScheme: 'auto' as never });
   document.getElementById('signin')?.addEventListener('click', signIn);
   document.getElementById('signout')?.addEventListener('click', signOut);
+  $('#wrap').onclick = () => setWrap(!document.body.classList.contains('wrap'));
+  setWrap(store.get(WRAP) ? store.get(WRAP) === '1' : matchMedia('(max-width: 800px)').matches, false);
   document.addEventListener('keydown', onKey);
+}
+
+const WRAP = 'prtour.wrap';
+
+/** Wraps long code lines instead of scrolling sideways; `remember` keeps the choice in this browser. */
+function setWrap(on: boolean, remember = true) {
+  document.body.classList.toggle('wrap', on);
+  $('#wrap').setAttribute('aria-pressed', String(on));
+  if (remember) store.set(WRAP, on ? '1' : '0');
 }
 
 // ---------- stack navigation ----------

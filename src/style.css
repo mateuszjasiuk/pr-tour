@@ -88,6 +88,10 @@ aside, #diff { min-height: 0; }
 .d2h-diff-table { width: max-content; min-width: 100%; }
 .d2h-code-line { width: max-content; }
 .tour-note .bubble { position: sticky; left: 8px; max-width: min(720px, calc(100vw - 440px)); }
+body.wrap .d2h-diff-table { width: 100%; min-width: 0; }
+body.wrap .d2h-code-line { width: auto; white-space: normal; }
+body.wrap .d2h-code-line-ctn { display: inline; white-space: pre-wrap; overflow-wrap: anywhere; }
+button[aria-pressed="true"] { background: var(--panel); border-color: var(--accent); color: var(--accent); }
 tr.tour-hl td { background: var(--hl) !important; }
 tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
 
@@ -116,6 +120,13 @@ tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }
   .steps li:not(.active) { display: none; }
   .tour-note td { padding-left: 12px; }
   .tour-note .bubble { max-width: calc(100vw - 48px); }
+
+  /* One line number instead of two: the new one, or the old one on deleted lines. */
+  .d2h-code-linenumber { width: 3.5em; }
+  .d2h-code-linenumber .line-num1, .d2h-code-linenumber .line-num2 { float: none; width: 100%; text-align: right; }
+  .d2h-code-linenumber .line-num1, .d2h-code-linenumber.d2h-del .line-num2 { display: none; }
+  .d2h-code-linenumber.d2h-del .line-num1 { display: block; }
+  .d2h-code-line { padding: 0 1em 0 4em; }
   
   /* Rozmiary czcionek */
   body, .bubble { font-size: 10px; line-height: 1.45; }
