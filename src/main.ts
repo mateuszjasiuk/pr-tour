@@ -84,6 +84,7 @@ async function load(o: string, r: string, n: number) {
     shell(o, r, n);
     go(current);
     fetchStackNav(o, r, pull, token());
+    import('./highlight.ts').then((m) => m.highlightDiff($('#diff'), files)).catch(() => {});
   } catch (e) {
     if (e instanceof AuthError) {
       app.innerHTML = `<main class="landing"><h1>🧭 PR Tour</h1><p>${esc(e.message)}</p><button id="signin">Sign in with GitHub</button>

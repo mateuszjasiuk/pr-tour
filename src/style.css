@@ -91,6 +91,11 @@ aside, #diff { min-height: 0; }
 body.wrap .d2h-diff-table { width: 100%; min-width: 0; }
 body.wrap .d2h-code-line { width: auto; white-space: normal; }
 body.wrap .d2h-code-line-ctn { display: inline; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Shiki puts the dark-theme colour in --shiki-dark next to the light one. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .d2h-code-line-ctn span[style] { color: var(--shiki-dark) !important; }
+}
+:root[data-theme="dark"] .d2h-code-line-ctn span[style] { color: var(--shiki-dark) !important; }
 button[aria-pressed="true"] { background: var(--panel); border-color: var(--accent); color: var(--accent); }
 tr.tour-hl td { background: var(--hl) !important; }
 tr.tour-hl td.d2h-code-linenumber { box-shadow: inset 3px 0 0 var(--hl-edge); }

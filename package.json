@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "diff2html": "^3.4.56",
-    "lz-string": "^1.5.0"
+    "lz-string": "^1.5.0",
+    "shiki": "^4.6.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
